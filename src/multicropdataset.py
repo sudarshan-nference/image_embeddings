@@ -11,6 +11,11 @@ from PIL import ImageFilter
 import numpy as np
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+import cv2
+from PIL import Image
+import tifffile as tiff
+from torchvision.transforms.transforms import RandomAutocontrast, RandomEqualize, ToPILImage
+import torchio as tio
 
 logger = getLogger()
 
@@ -35,9 +40,14 @@ class MultiCropDataset(datasets.ImageFolder):
         self.return_index = return_index
 
         color_transform = [get_color_distortion(), PILRandomGaussianBlur()]
-        mean = [0.485, 0.456, 0.406]
-        std = [0.228, 0.224, 0.225]
+        hist_eq = [CLAHE()]
+
+        #mean = [0.485, 0.456, 0.406]
+        #std = [0.228, 0.224, 0.225]
+        mean =  27.6045689325 
+        std =  37.1124440081 
         trans = []
+
         for i in range(len(size_crops)):
             randomresizedcrop = transforms.RandomResizedCrop(
                 size_crops[i],
@@ -46,19 +56,42 @@ class MultiCropDataset(datasets.ImageFolder):
             trans.extend([transforms.Compose([
                 randomresizedcrop,
                 transforms.RandomHorizontalFlip(p=0.5),
+                #transforms.RandomAutocontrast(p=0.5),
+                #transforms.RandomEqualize(p=0.5),
                 transforms.Compose(color_transform),
+                #transforms.Compose(hist_eq),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=mean, std=std)])
             ] * nmb_crops[i])
         self.trans = trans
 
+
     def __getitem__(self, index):
         path, _ = self.samples[index]
         image = self.loader(path)
+        #image = self.tiff_loader(path)
         multi_crops = list(map(lambda trans: trans(image), self.trans))
+
         if self.return_index:
             return index, multi_crops
         return multi_crops
+
+
+    def tio_loader(self, tif_path):
+        im = tiff.imread(tif_path)
+        im = np.dstack((im, im, im))
+        im = np.moveaxis(im, 2, 0)
+        im = np.expand_dims(im, 0)
+        return im
+
+
+    def tiff_loader(self, tif_path):
+        tiff_img = tiff.imread(tif_path).astype(int)
+        print(type(tiff_img[0][0]))
+        if tiff_img.ndim == 2:
+            tiff_img = np.asarray(np.dstack((tiff_img, tiff_img, tiff_img)))
+            print(np.shape)
+        return tiff_img
 
 
 class PILRandomGaussianBlur(object):
@@ -92,3 +125,20 @@ def get_color_distortion(s=1.0):
     rnd_gray = transforms.RandomGrayscale(p=0.2)
     color_distort = transforms.Compose([rnd_color_jitter, rnd_gray])
     return color_distort
+
+class CLAHE(object):
+    def __init__(self, cliplim = 1.0, tilegrid = (4,4)):
+        self.cliplim = cliplim
+        self.tilegrid = tilegrid
+
+    def __call__(self, img):
+        img = np.array(img)
+        clahe_eq = cv2.createCLAHE(clipLimit=self.cliplim, tileGridSize=self.tilegrid)
+        if img.ndim == 2:
+            return clahe_eq.apply(img)
+        else:
+            _, _, nch = img.shape
+            new_im = np.zeros_like(img)
+            for ch in range(nch):
+                new_im[:,:,ch] = clahe_eq.apply(img[:,:,ch])
+        return Image.fromarray(new_im)

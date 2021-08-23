@@ -40,15 +40,15 @@ parser = argparse.ArgumentParser(description="Implementation of SwAV")
 #########################
 #### data parameters ####
 #########################
-parser.add_argument("--data_path", type=str, default="/path/to/imagenet",
+parser.add_argument("--data_path", type=str, default="/datastorage/sudarshan/data/TCIA/LUNG/temp_npz",
                     help="path to dataset repository")
-parser.add_argument("--nmb_crops", type=int, default=[2], nargs="+",
+parser.add_argument("--nmb_crops", type=int, default=[2, 6], nargs="+",
                     help="list of number of crops (example: [2, 6])")
-parser.add_argument("--size_crops", type=int, default=[224], nargs="+",
+parser.add_argument("--size_crops", type=int, default=[224, 96], nargs="+",
                     help="crops resolutions (example: [224, 96])")
-parser.add_argument("--min_scale_crops", type=float, default=[0.14], nargs="+",
+parser.add_argument("--min_scale_crops", type=float, default=[0.14, 0.05], nargs="+",
                     help="argument in RandomResizedCrop (example: [0.14, 0.05])")
-parser.add_argument("--max_scale_crops", type=float, default=[1], nargs="+",
+parser.add_argument("--max_scale_crops", type=float, default=[1, 0.14], nargs="+",
                     help="argument in RandomResizedCrop (example: [1., 0.14])")
 
 #########################
@@ -66,7 +66,7 @@ parser.add_argument("--feat_dim", default=128, type=int,
                     help="feature dimension")
 parser.add_argument("--nmb_prototypes", default=3000, type=int,
                     help="number of prototypes")
-parser.add_argument("--queue_length", type=int, default=0,
+parser.add_argument("--queue_length", type=int, default=3840,
                     help="length of the queue (0 for no queue)")
 parser.add_argument("--epoch_queue_starts", type=int, default=15,
                     help="from this epoch, we start using a queue")
@@ -76,12 +76,12 @@ parser.add_argument("--epoch_queue_starts", type=int, default=15,
 #########################
 parser.add_argument("--epochs", default=100, type=int,
                     help="number of total epochs to run")
-parser.add_argument("--batch_size", default=64, type=int,
-                    help="batch size per gpu, i.e. how many unique instances per gpu")
-parser.add_argument("--base_lr", default=4.8, type=float, help="base learning rate")
-parser.add_argument("--final_lr", type=float, default=0, help="final learning rate")
-parser.add_argument("--freeze_prototypes_niters", default=313, type=int,
-                    help="freeze the prototypes during this many iterations from the start")
+parser.add_argument("--batch_size", default=16, type=int,
+                    help="batch size per gpu, i.e. how many unique instances per gpu") # was 64
+parser.add_argument("--base_lr", default=0.6, type=float, help="base learning rate")# was 4.8
+parser.add_argument("--final_lr", type=float, default=0.0006, help="final learning rate")
+parser.add_argument("--freeze_prototypes_niters", default=5005, type=int,
+                    help="freeze the prototypes during this many iterations from the start")# was 313
 parser.add_argument("--wd", default=1e-6, type=float, help="weight decay")
 parser.add_argument("--warmup_epochs", default=10, type=int, help="number of warmup epochs")
 parser.add_argument("--start_warmup", default=0, type=float,
@@ -106,12 +106,12 @@ parser.add_argument("--local_rank", default=0, type=int,
 parser.add_argument("--arch", default="resnet50", type=str, help="convnet architecture")
 parser.add_argument("--hidden_mlp", default=2048, type=int,
                     help="hidden layer dimension in projection head")
-parser.add_argument("--workers", default=10, type=int,
-                    help="number of data loading workers")
+parser.add_argument("--workers", default=5, type=int,
+                    help="number of data loading workers")# was 10
 parser.add_argument("--checkpoint_freq", type=int, default=25,
                     help="Save the model periodically")
-parser.add_argument("--use_fp16", type=bool_flag, default=True,
-                    help="whether to train with mixed precision or not")
+parser.add_argument("--use_fp16", type=bool_flag, default=False,
+                    help="whether to train with mixed precision or not") # was True
 parser.add_argument("--sync_bn", type=str, default="pytorch", help="synchronize bn")
 parser.add_argument("--syncbn_process_group_size", type=int, default=8, help=""" see
                     https://github.com/NVIDIA/apex/blob/master/apex/parallel/__init__.py#L58-L67""")
@@ -377,4 +377,5 @@ def distributed_sinkhorn(out):
 
 
 if __name__ == "__main__":
+    
     main()
