@@ -50,8 +50,8 @@ def dicom2tiff(im_path, dest_im_type, dest_dir):
                 slice_unquant = im_slice.pop('unquantized_frame_float32')
 
                 tif_im_name = '{}_slice_{}.tif'.format(im_id_str, ii)
-                dest_dir_npz = os.path.join(dest_dir, 'TIF')
-                tif_im_path = os.path.join(dest_dir_npz, tif_im_name)
+                dest_dir_tif = os.path.join(dest_dir, 'TIF')
+                tif_im_path = os.path.join(dest_dir_tif, tif_im_name)
                 tiff.imsave(tif_im_path, slice_unquant)
     return
 
